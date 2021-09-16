@@ -12,5 +12,10 @@ public interface ChatRepository extends ReactiveMongoRepository<Chat, String> {
     
     @Tailable // 데이터가 계속 흘러가게 하는 것
     @Query("{sender:?0, receiver:?1}") // mongodb에서 sender가 sender일 때 receiver가 receiver를 찾는 것
-    Flux<Chat> mfindBySender(String sender, String receiver); // Flux(데이터의 흐름)
+    Flux<Chat> mFindBySender(String sender, String receiver); // Flux(데이터의 흐름)
+
+    @Tailable
+    @Query("{roomNum:?0}")
+    Flux<Chat> mFindByRoomNum(Integer roomNum);
+
 }

@@ -1,84 +1,111 @@
-const eventSource = new EventSource("http://localhost:8080/sender/wi/receiver/kim");
+// 로그인 시스템으로 대체해야 함
+let username = prompt("아이디를 입력하세요");
+let roomNum = prompt("채팅방 번호를 입력하세요");
 
+document.querySelector("#username").innerHTML = username;
+
+// SSE 연결 
+const eventSource = new EventSource(
+  `http://localhost:8080/chat/roomNum/${roomNum}`
+);
 eventSource.onmessage = (event) => {
-    console.log(1, event);
-    const data = JSON.parse(event.data);
-    console.log(2, data);
-    initMessage(data);
-}
+  
+  const data = JSON.parse(event.data);
+  if (data.sender === username) { // 로그인한 사용자가 보내는 메시지
+    // 파란박스 (오른쪽)
+    initMyMessage(data);
+  } else {
+    // 회색박스 (왼쪽)
+    initYourMessage(data);
+  }
+  
+};
 
 
-function getSendMsgBox(msg, time) {
-    return `<div class="sent_msg">
-    <p>${msg}</p>
-    <span class="time_date"> ${time}</span>
+// 파란박스 만들기
+function getSendMsgBox(data) {
+
+  let md = data.createAt.substring(5, 10);
+  let tm = data.createAt.substring(11, 16);
+  let convertTime = tm + " | " + md;
+
+  return `<div class="sent_msg">
+    <p>${data.msg}</p>
+    <span class="time_date"> ${convertTime} / <b>${data.sender}</b></span>
     </div>`;
 }
 
-function initMessage(data) {
-    let chatBox = document.querySelector("#chat-box");
-    let msgInput = document.querySelector("#chat-outgoing-msg");
+// 회색박스 만들기
+function getReceiveMsgBox(data) {
 
-    let chatOutgoingBox = document.createElement("div");
-    chatOutgoingBox.className = "outgoing_msg";
+  let md = data.createAt.substring(5, 10);
+  let tm = data.createAt.substring(11, 16);
+  let convertTime = tm + " | " + md;
 
-
-    let y_str = data.createAt.substring(0, 4);
-    let m_str = data.createAt.substring(5, 7);
-    let d_str = data.createAt.substring(8, 10);
-    let hh_str = data.createAt.substring(11, 13);
-    let mm_str = data.createAt.substring(14, 16);
-
+  return `<div class="received_withd_msg">
+    <p>${data.msg}</p>
+    <span class="time_date"> ${convertTime} / <b>${data.sender}</b></span>
+    </div>`;
+}
 
 
-    let modifiedDate = hh_str + ":" + mm_str + " | " + d_str + "일 " + m_str + "월 " + y_str + "년";
+// 파란박스 초기화
+function initMyMessage(data) {
+  let chatBox = document.querySelector("#chat-box");
+  let sendBox = document.createElement("div");
+  sendBox.className = "outgoing_msg";
+  sendBox.innerHTML = getSendMsgBox(data);
+  chatBox.append(sendBox);
 
-    chatOutgoingBox.innerHTML = getSendMsgBox(data.msg, modifiedDate);
+  document.documentElement.scrollTop = document.body.scrollHeight;
+  
+}
 
+// 회색박스 초기화
+function initYourMessage(data) {
+  let chatBox = document.querySelector("#chat-box"); 
+  let receivedBox = document.createElement("div");
+  receivedBox.className = "received_msg";
+  receivedBox.innerHTML = getReceiveMsgBox(data);
+  chatBox.append(receivedBox);
 
-    chatBox.append(chatOutgoingBox);
-    msgInput.value = "";
-
-
+  document.documentElement.scrollTop = document.body.scrollHeight;
 }
 
 
 
+// ajax로 채팅 메시지 전송
+async function addMessage() {
+  
+  let msgInput = document.querySelector("#chat-outgoing-msg");
+  
 
-function addMessage() {
-    let chatBox = document.querySelector("#chat-box");
-    let msgInput = document.querySelector("#chat-outgoing-msg");
+  let chat = {
+    sender: username,
+    roomNum: roomNum,
+    msg: msgInput.value,
+  };
 
-    let chatOutgoingBox = document.createElement("div");
-    chatOutgoingBox.className = "outgoing_msg";
+  fetch("http://localhost:8080/chat", {
+    method: "post", // http post method
+    body: JSON.stringify(chat), // JS -> JSON
+    headers: {
+      "Content-Type": "Application/json; chatset=utf-8",
+    },
+  });
 
-    let date = new Date();
-    let now = date.getHours() + ":" + date.getMinutes() + " | " + date.getDate() + "일 " + date.getMonth() + "월 " + date.getFullYear() + "년";
-
-
-    let chat = {
-        sender: "wi",
-        receiver: "kim",
-        msg: msgInput.value
-    };
-
-    fetch("http://localhost:8080/chat", {
-        method: "post", // http post method 
-        body: JSON.stringify(chat), // JS -> JSON
-    })
-
-    chatOutgoingBox.innerHTML = getSendMsgBox(msgInput.value, now);
-    chatBox.append(chatOutgoingBox);
-    msgInput.value = "";
+  msgInput.value = "";
 }
 
 
-document.querySelector("#chat-outgoing-button").addEventListener("click", () => {
-    
-
+// 버튼 누를 시
+document
+  .querySelector("#chat-outgoing-button")
+  .addEventListener("click", () => {
     addMessage();
   });
 
+// 엔터 누를 시 
 document
   .querySelector("#chat-outgoing-msg")
   .addEventListener("keydown", (e) => {

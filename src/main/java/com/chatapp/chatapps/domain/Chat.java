@@ -14,8 +14,9 @@ public class Chat {
     @Id
     private String id;
     private String msg;
-    private String sender;
-    private String receiver;
+    private String sender; // 보내는 사람
+    private String receiver; //( 귓속말할 때 필요 )
+    private Integer roomNum; // 방번호
 
     private LocalDateTime createAt;
 
